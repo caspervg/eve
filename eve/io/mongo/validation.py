@@ -97,6 +97,8 @@ class Validator(Validator):
             temp_path = [attribute_path[0]]
 
             for i, path in enumerate(attribute_path[:-1]):
+                if path not in schema:
+                    continue
                 schema = schema[path]
                 if schema["type"] != "list":
                     temp_path.append(attribute_path[i + 1])
