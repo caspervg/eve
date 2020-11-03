@@ -298,6 +298,74 @@ tenant_b = {
     },
 }
 
+test_unique = {
+    "datasource": {"source": "test_unique"},
+    "schema": {
+        "unique_attribute": {"type": "string", "unique": True},
+        "unique_within_resource_attribute": {
+            "type": "string",
+            "unique_within_resource": True,
+        },
+    },
+}
+
+credit_rules = {
+    "allow_unknown": True,
+    "schema": {
+        "name": {"type": "string"},
+        "amount": {"type": "float", "default": 0.00, "min": 0.00, "required": True},
+        "start": {"type": "string", "required": True},
+        "duration": {
+            "type": "string",
+            "allowed": ["days", "weeks", "months", "years", "one-time"],
+            "required": True,
+        },
+        "prepaid": {"type": "boolean", "default": False},
+        "expiration_duration": {
+            "type": "string",
+            "allowed": ["days", "weeks", "months", "years"],
+            "required": False,
+        },
+    },
+}
+
+brands = {
+    "item_title": "brand",
+    "schema": {
+        "name": {"type": "string"},
+        "address": "string",
+    },
+}
+
+components = {
+    "item_title": "component",
+    "schema": {
+        "name": {"type": "string"},
+        "price": "integer",
+        "brand": {"type": "objectid", "data_relation": {"resource": "brands"}},
+    },
+}
+
+computers = {
+    "item_title": "computers",
+    "schema": {
+        "name": {"type": "string"},
+        "components": {
+            "type": "dict",
+            "schema": {
+                "cpu": {
+                    "type": "objectid",
+                    "data_relation": {"resource": "components"},
+                },
+                "motherboard": {
+                    "type": "objectid",
+                    "data_relation": {"resource": "components"},
+                },
+            },
+        },
+    },
+}
+
 child_products = copy.deepcopy(products)
 child_products["url"] = 'products/<regex("[A-Z]+"):parent_product>/children'
 child_products["datasource"] = {"source": "products"}
@@ -334,4 +402,9 @@ DOMAIN = {
     "test_patch": test_patch,
     "tenant_a": tenant_a,
     "tenant_b": tenant_b,
+    "test_unique": test_unique,
+    "credit_rules": credit_rules,
+    "brands": brands,
+    "components": components,
+    "computers": computers,
 }

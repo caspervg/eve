@@ -6,13 +6,74 @@ Here you can see the full list of changes between each Eve release.
 In Development
 ---------------
 
+- Disable MD5 support in GridFS, as it is deprecated (`#1410`_).
+
+.. _`#1410`: https://github.com/pyeve/eve/issues/1410
+
+Version 1.1.4
+-------------
+
+Released on October 22, 2020.
+
 Fixed
 ~~~~~
 
-- dics without ``schema`` rule are broken since ``b8d8fcd`` (`#1366`_)
+- Error raised when using ``embedded`` with nested dict (`#1416`_)
+- Expose media endpoint only if ``RETURN_MEDIA_AS_URL`` is set to ``True`` (`#1415`_)
+- Use ``**mongo_options`` in ``with_options`` (`#1413`_)
+
+.. _`#1416`: https://github.com/pyeve/eve/issues/1416
+.. _`#1415`: https://github.com/pyeve/eve/pull/1415
+.. _`#1413`: https://github.com/pyeve/eve/issues/1413
+
+Version 1.1.3
+-------------
+
+Released on September 19, 2020.
+
+Fixed
+~~~~~
+
+- Fix: Race condition in PATCH on newly created documents with clustered mongo (`#1411`_)
+
+.. _`#1411`: https://github.com/pyeve/eve/issues/1411
+
+Version 1.1.2
+-------------
+
+Released on July 9, 2020.
+
+Fixed
+~~~~~
+
+- Add missed condition when projection is disabled per domain (`#1398`_)
+- Removed unnecessary comprehension (`#1391`_)
+
+.. _`#1398`: https://github.com/pyeve/eve/pull/1398
+.. _`#1391`: https://github.com/pyeve/eve/pull/1391
+
+Version 1.1.1
+-------------
+
+Released on May 10, 2020.
+
+Fixed
+~~~~~
+
+- Disabling ``merge_nested_documents`` breaks versioning on PATCH (`#1389`_)
+- Tests failing with Flask 1.1.2 (`#1378`_)
+- ``BANDWIDTH_SAVER`` no longer works with ``resolve_resource_projection`` (`#1338`_)
+- ``unique_within_resource`` rule used in resources without datasource filter (`#1368`_)
+- dicts without ``schema`` rule are broken since ``b8d8fcd`` (`#1366`_)
 - 403 Forrbidden added to ``STANDARD_ERRORS`` (`#1362`_)
 - ``unique`` constraint doesn't work when inside of a dict or a list (`#1360`_)
+- Documentation typos (`#1375`_)
 
+.. _`#1389`: https://github.com/pyeve/eve/issues/1389
+.. _`#1378`: https://github.com/pyeve/eve/pull/1378
+.. _`#1375`: https://github.com/pyeve/eve/pull/1375
+.. _`#1338`: https://github.com/pyeve/eve/issues/1338
+.. _`#1368`: https://github.com/pyeve/eve/pull/1368
 .. _`#1366`: https://github.com/pyeve/eve/pull/1366
 .. _`#1362`: https://github.com/pyeve/eve/pull/1362
 .. _`#1360`: https://github.com/pyeve/eve/issues/1360
@@ -31,7 +92,7 @@ New
 Fixed
 ~~~~~
 - Starup crash with Werkzeug 1.0 (`#1359`_)
-- ``$eq`` is missing from supported query opeators (`#1351`_)
+- ``$eq`` is missing from supported query operators (`#1351`_)
 - Documentation typos (`#1348`_, `#1350`_)
 
 .. _`#1359`: https://github.com/pyeve/eve/issues/1359

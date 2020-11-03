@@ -1,6 +1,8 @@
 import simplejson as json
 
 from bson import ObjectId
+from pymongo import ReadPreference
+
 from eve import ETAG
 from eve import ISSUES
 from eve import LAST_UPDATED
@@ -220,10 +222,10 @@ class TestPatch(TestBase):
         self.assertEqual(db_value, test_value)
 
     def test_patch_missing_default(self):
-        """ PATCH an object which is missing a field with a default value.
+        """PATCH an object which is missing a field with a default value.
 
         This should result in setting the field to its default value, even if
-        the field is not provided in the PATCH's payload. """
+        the field is not provided in the PATCH's payload."""
         field = "ref"
         test_value = "1234567890123456789012345"
         changes = {field: test_value}
@@ -236,10 +238,10 @@ class TestPatch(TestBase):
         )
 
     def test_patch_missing_default_with_post_override(self):
-        """ PATCH an object which is missing a field with a default value.
+        """PATCH an object which is missing a field with a default value.
 
         This should result in setting the field to its default value, even if
-        the field is not provided in the PATCH's payload. """
+        the field is not provided in the PATCH's payload."""
         field = "ref"
         test_value = "1234567890123456789012345"
         r = self.perform_patch_with_post_override(field, test_value)
@@ -255,10 +257,10 @@ class TestPatch(TestBase):
         )
 
     def test_patch_missing_nested_default(self):
-        """ PATCH an object which is missing a field with a default value.
+        """PATCH an object which is missing a field with a default value.
 
         This should result in setting the field to its default value, even if
-        the field is not provided in the PATCH's payload. """
+        the field is not provided in the PATCH's payload."""
         field = "dict_with_nested_default"
         test_value = {}
         changes = {field: test_value}
@@ -299,6 +301,24 @@ class TestPatch(TestBase):
                 self.known_resource,
                 data,
                 concurrency_check=False,
+                **{"_id": self.item_id}
+            )
+        db_value = self.compare_patch_with_get(test_field, r)
+        self.assertEqual(db_value, test_value)
+        self.assert200(status)
+
+    def test_patch_internal_with_options(self):
+        # test that patch_internal is available and working properly.
+        test_field = "ref"
+        test_value = "9876543210987654321098765"
+        data = {test_field: test_value}
+        mongo_options = {"read_preference": ReadPreference.PRIMARY}
+        with self.app.test_request_context(self.item_id_url):
+            r, _, _, status = patch_internal(
+                self.known_resource,
+                data,
+                concurrency_check=False,
+                mongo_options=mongo_options,
                 **{"_id": self.item_id}
             )
         db_value = self.compare_patch_with_get(test_field, r)
@@ -524,6 +544,49 @@ class TestPatch(TestBase):
         db_value = self.compare_patch_with_get(self.app.config["ETAG"], r)
         self.assertEqual(db_value, r[self.app.config["ETAG"]])
 
+    def test_patch_bandwidth_saver_credit_rule_broken(self):
+        _db = self.connection[MONGO_DBNAME]
+        rule = {
+            "amount": 300.0,
+            "duration": "months",
+            "name": "Testing BANDWIDTH_SAVER=False",
+            "start": "2020-03-28T06:00:00 UTC",
+        }
+        rule_id = _db.credit_rules.insert_one(rule).inserted_id
+        rule_url = "credit_rules/%s/" % (rule_id)
+        changes = {
+            "amount": 120.0,
+            "duration": "months",
+            "start": "2020-04-01T00:00:00 UTC",
+        }
+        response, _ = self.get("credit_rules/%s/" % (rule_id))
+        etag = response[ETAG]
+        # bandwidth_saver is on by default
+        self.assertTrue(self.app.config["BANDWIDTH_SAVER"])
+        self.assertTrue(self.app.config["PROJECTION"])
+        r, status = self.patch(rule_url, data=changes, headers=[("If-Match", etag)])
+        self.assert200(status)
+        self.assertPatchResponse(r, "%s" % (rule_id))
+        self.assertFalse("amount" in r)
+        etag = r[self.app.config["ETAG"]]
+        r, _ = self.get(rule_url, "")
+        self.assertEqual(etag, r[self.app.config["ETAG"]])
+
+        # test return all fields (bandwidth_saver off)
+        self.app.config["BANDWIDTH_SAVER"] = False
+        changes["name"] = "Give it all to me!"
+        r, status = self.patch(rule_url, data=changes, headers=[("If-Match", etag)])
+        self.assert200(status)
+        self.assertPatchResponse(r, "%s" % (rule_id))
+        self.assertTrue(
+            all(["amount" in r, "duration" in r, "name" in r, "start" in r]),
+            'One or more of "amount", "duration", "name", "start" is missing.',
+        )
+        self.assertTrue(r["name"] == "Give it all to me!")
+        etag = r[self.app.config["ETAG"]]
+        r, status = self.get(rule_url, "")
+        self.assertEqual(etag, r[self.app.config["ETAG"]])
+
     def test_patch_readonly_field_with_previous_document(self):
         schema = self.domain["contacts"]["schema"]
         del schema["ref"]["required"]
@@ -558,7 +621,7 @@ class TestPatch(TestBase):
         self.assertTrue("is read-only" in r["_issues"]["read_only_field"])
 
     def test_patch_nested_document_not_overwritten(self):
-        """ Test that nested documents are not overwritten on PATCH and #519
+        """Test that nested documents are not overwritten on PATCH and #519
         is fixed.
         """
 
@@ -617,7 +680,7 @@ class TestPatch(TestBase):
         self.assertEqual(int, 99)
 
     def test_patch_nested_document_no_merge(self):
-        """ Test that nested documents are not merged, but overwritten,
+        """Test that nested documents are not merged, but overwritten,
         if configured."""
         domain = {
             "merge_nested_documents": False,
@@ -675,7 +738,7 @@ class TestPatch(TestBase):
         self.assertEqual(r["other"], {"name": "other_name"})
 
     def test_patch_dependent_field_on_origin_document(self):
-        """ Test that when patching a field which is dependent on another field's
+        """Test that when patching a field which is dependent on another field's
         existance, and this other field is not provided in the patch, but does
         exist on the persisted document, the patch will be accepted.
 
@@ -722,7 +785,7 @@ class TestPatch(TestBase):
         self.assert200(status)
 
     def test_patch_dependent_field_value_on_origin_document(self):
-        """ Test that when patching a field which is dependent on another field's
+        """Test that when patching a field which is dependent on another field's
         value, and this other field is not provided in the patch, but is present
         on the persisted document, the patch will be accepted.
 

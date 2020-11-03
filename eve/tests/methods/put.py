@@ -198,9 +198,9 @@ class TestPut(TestBase):
 
     def test_put_sets_default_value_when_field_not_provided_neither_persisted(self):
         """
-            Test that when replacing a document, any field that has default values
-            defined in the schema is set according to the schema default when
-            the current persisted document doesn't have the field value set.
+        Test that when replacing a document, any field that has default values
+        defined in the schema is set according to the schema default when
+        the current persisted document doesn't have the field value set.
         """
         test_field = "unsetted_default_value_field"
         test_value = self.domain["contacts"]["schema"]["unsetted_default_value_field"][
@@ -213,12 +213,12 @@ class TestPut(TestBase):
 
     def test_put_sets_default_value_when_field_not_provided_but_persisted(self):
         """
-            Test that when replacing a document, any field that has default values
-            defined in the schema is set according to the schema default when
-            the current persisted document already had the field value set.
+        Test that when replacing a document, any field that has default values
+        defined in the schema is set according to the schema default when
+        the current persisted document already had the field value set.
 
-            This effectively makes impossible to delete fields with default values
-            in the schema using a PUT request.
+        This effectively makes impossible to delete fields with default values
+        in the schema using a PUT request.
         """
         test_field = "title"
         test_value = "Mr."
@@ -229,9 +229,9 @@ class TestPut(TestBase):
 
     def test_put_removes_non_provided_non_default_field(self):
         """
-            Test that when replacing a document, any field that has doesn't have
-            a default value defined in the schema and has not been provided in
-            the request will be effectively deleted in the replaced version.
+        Test that when replacing a document, any field that has doesn't have
+        a default value defined in the schema and has not been provided in
+        the request will be effectively deleted in the replaced version.
 
         """
         data = {"ref": "9234567890123456789054321"}
@@ -361,6 +361,49 @@ class TestPut(TestBase):
         self.assertTrue("ref" in r)
         db_value = self.compare_put_with_get(self.app.config["ETAG"], r)
         self.assertEqual(db_value, r[self.app.config["ETAG"]])
+
+    def test_put_bandwidth_saver_credit_rule_broken(self):
+        _db = self.connection[MONGO_DBNAME]
+        rule = {
+            "amount": 300.0,
+            "duration": "months",
+            "name": "Testing BANDWIDTH_SAVER=False",
+            "start": "2020-03-28T06:00:00 UTC",
+        }
+        rule_id = _db.credit_rules.insert_one(rule).inserted_id
+        rule_url = "credit_rules/%s/" % (rule_id)
+        changes = {
+            "amount": 120.0,
+            "duration": "months",
+            "start": "2020-04-01T00:00:00 UTC",
+        }
+        response, _ = self.get("credit_rules/%s/" % (rule_id))
+        etag = response[ETAG]
+        # bandwidth_saver is on by default
+        self.assertTrue(self.app.config["BANDWIDTH_SAVER"])
+        self.assertTrue(self.app.config["PROJECTION"])
+        r, status = self.put(rule_url, data=changes, headers=[("If-Match", etag)])
+        self.assert200(status)
+        self.assertPutResponse(r, "%s" % (rule_id))
+        self.assertFalse("amount" in r)
+        etag = r[self.app.config["ETAG"]]
+        r, _ = self.get(rule_url, "")
+        self.assertEqual(etag, r[self.app.config["ETAG"]])
+
+        # test return all fields (bandwidth_saver off)
+        self.app.config["BANDWIDTH_SAVER"] = False
+        changes["name"] = "Give it all to me!"
+        r, status = self.put(rule_url, data=changes, headers=[("If-Match", etag)])
+        self.assert200(status)
+        self.assertPutResponse(r, "%s" % (rule_id))
+        self.assertTrue(
+            all(["amount" in r, "duration" in r, "name" in r, "start" in r]),
+            'One or more of "amount", "duration", "name", "start" is missing.',
+        )
+        self.assertTrue(r["name"] == "Give it all to me!")
+        etag = r[self.app.config["ETAG"]]
+        r, status = self.get(rule_url, "")
+        self.assertEqual(etag, r[self.app.config["ETAG"]])
 
     def test_put_dependency_fields_with_default(self):
         # Test that if a dependency is missing but has a default value then the

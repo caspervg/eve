@@ -7,14 +7,14 @@ from eve import Eve
 from datetime import datetime
 from eve.utils import config
 from eve.io.base import BaseJSONEncoder
-from eve.tests.test_settings import MONGO_DBNAME
+from eve.tests.test_settings import MONGO_DBNAME, MONGO_USERNAME, MONGO_PASSWORD
 from uuid import UUID
 from eve.io.mongo import Validator
 import os
 
 
 class UUIDEncoder(BaseJSONEncoder):
-    """ Propretary JSONEconder subclass used by the json render function.
+    """Propretary JSONEconder subclass used by the json render function.
     This is different from BaseJSONEoncoder since it also addresses encoding of
     UUID
     """
@@ -68,9 +68,9 @@ class TestCustomConverters(TestMinimal):
             "schema": {"_id": {"type": "uuid"}, "name": {"type": "string"}},
         }
         settings = {
-            "MONGO_USERNAME": "test_user",
-            "MONGO_PASSWORD": "test_pw",
-            "MONGO_DBNAME": "eve_test",
+            "MONGO_USERNAME": MONGO_USERNAME,
+            "MONGO_PASSWORD": MONGO_PASSWORD,
+            "MONGO_DBNAME": MONGO_DBNAME,
             "DOMAIN": {"uuids": uuids},
         }
         url_converters = {"uuid": UUIDConverter}
@@ -250,7 +250,7 @@ class TestEndPoints(TestBase):
         self.assert200(r.status_code)
 
     def test_api_prefix_version_hateoas_links(self):
-        """ Test that #419 is closed and URL_PREFIX and API_VERSION are stipped
+        """Test that #419 is closed and URL_PREFIX and API_VERSION are stipped
         out of hateoas links since they are now relative to the API entry point
         (root).
         """
