@@ -356,7 +356,7 @@ def get_data_version_relation_document(data_relation, reference, latest=False):
         # Field will be present in the versioned collection
         query[value_field] = reference[value_field]
 
-    referenced_version = app.data.find_one(versioned_collection, None, **query)
+    referenced_version = app.data.find_one(versioned_collection, None, check_auth_value=False, **query)
 
     # support late versioning
     if referenced_version is None and reference[version_field] == 1:
@@ -375,7 +375,7 @@ def get_data_version_relation_document(data_relation, reference, latest=False):
         # Still return latest after soft delete. It is needed to synthesize
         # full document version.
         req.show_deleted = True
-    latest_version = app.data.find_one(collection, req, **query)
+    latest_version = app.data.find_one(collection, req, check_auth_value=False, **query)
     if latest is True:
         return latest_version
 
