@@ -197,7 +197,7 @@ class Validator(Validator):
                 query = {
                     data_relation["field"]: item.id if isinstance(item, DBRef) else item
                 }
-                if not app.data.find_one(data_resource, None, **query):
+                if not app.data.find_one(data_resource, None, check_auth_value=False, **query):
                     self._error(
                         field,
                         "value '%s' must exist in resource"
