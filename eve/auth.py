@@ -75,7 +75,7 @@ def requires_auth(endpoint_class):
                     roles += app.config["ALLOWED_WRITE_ROLES"]
                 auth = app.auth
             if auth and request.method not in public:
-                if not auth.authorized(roles, resource_name, request.method):
+                if not auth.authorized(roles, resource_name, request.method, endpoint_class):
                     return auth.authenticate()
             return f(*args, **kwargs)
 
@@ -130,7 +130,7 @@ class BasicAuth(object):
     def set_user_or_token(self, user):
         g.user = user
 
-    def check_auth(self, username, password, allowed_roles, resource, method):
+    def check_auth(self, username, password, allowed_roles, resource, method, endpoint_class):
         """This function is called to check if a username / password
         combination is valid. Must be overridden with custom logic.
 
@@ -152,7 +152,7 @@ class BasicAuth(object):
             www_authenticate=("WWW-Authenticate", 'Basic realm="%s"' % __package__),
         )
 
-    def authorized(self, allowed_roles, resource, method):
+    def authorized(self, allowed_roles, resource, method, endpoint_class):
         """Validates the the current request is allowed to pass through.
 
         :param allowed_roles: allowed roles for the current request, can be a
@@ -163,7 +163,7 @@ class BasicAuth(object):
         if auth:
             self.set_user_or_token(auth.username)
         return auth and self.check_auth(
-            auth.username, auth.password, allowed_roles, resource, method
+            auth.username, auth.password, allowed_roles, resource, method, endpoint_class
         )
 
 
@@ -188,7 +188,7 @@ class HMACAuth(BasicAuth):
     """
 
     def check_auth(
-        self, userid, hmac_hash, headers, data, allowed_roles, resource, method
+        self, userid, hmac_hash, headers, data, allowed_roles, resource, method, endpoint_class
     ):
         """This function is called to check if a token is valid. Must be
         overridden with custom logic.
@@ -203,7 +203,7 @@ class HMACAuth(BasicAuth):
         """
         raise NotImplementedError
 
-    def authorized(self, allowed_roles, resource, method):
+    def authorized(self, allowed_roles, resource, method, endpoint_class):
         """Validates the the current request is allowed to pass through.
 
         :param allowed_roles: allowed roles for the current request, can be a
@@ -224,6 +224,7 @@ class HMACAuth(BasicAuth):
             allowed_roles,
             resource,
             method,
+            endpoint_class
         )
 
 
@@ -244,7 +245,7 @@ class TokenAuth(BasicAuth):
     .. versionadded:: 0.0.5
     """
 
-    def check_auth(self, token, allowed_roles, resource, method):
+    def check_auth(self, token, allowed_roles, resource, method, endpoint_class):
         """This function is called to check if a token is valid. Must be
         overridden with custom logic.
 
@@ -255,7 +256,7 @@ class TokenAuth(BasicAuth):
         """
         raise NotImplementedError
 
-    def authorized(self, allowed_roles, resource, method):
+    def authorized(self, allowed_roles, resource, method, endpoint_class):
         """Validates the the current request is allowed to pass through.
 
         :param allowed_roles: allowed roles for the current request, can be a
@@ -278,7 +279,7 @@ class TokenAuth(BasicAuth):
 
         if auth:
             self.set_user_or_token(auth)
-        return auth and self.check_auth(auth, allowed_roles, resource, method)
+        return auth and self.check_auth(auth, allowed_roles, resource, method, endpoint_class)
 
 
 def auth_field_and_value(resource):
